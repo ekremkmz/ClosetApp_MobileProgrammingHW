@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">Dolabım</string>
+    <string name="menuTitle1">Çekmecem</string>
+    <string name="menuTitle2">Kabin</string>
+    <string name="menuTitle3">Etkinlikler</string>
+    <string name="wellcome">Hoşgeldiniz...</string>
+    <string name="cancel">İptal</string>
+    <string name="save">Kaydet</string>
+    <string name="defaultDate">23/04/1920</string>
+    <string name="defaultImage">Fotoğraf seçiniz...</string>
+    <string name="defaultCombine">Kombin seçiniz...</string>
+    <string name="defaultLocation">Konum seçiniz...</string>
+    <string name="name">İsim</string>
+    <string name="type">Tür</string>
+    <string name="color">Renk</string>
+    <string name="pattern">Desen</string>
+    <string name="price">Fiyat</string>
+    <string name="delete">Sil</string>
+    <string name="update">Güncelle</string>
+    <string name="title_activity_maps">Harita</string>
+</resources>

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="10sp">
+
+        <EditText
+            android:id="@+id/addActivitiesDialogNameEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="10sp"
+            android:hint="@string/name" />
+
+        <EditText
+            android:id="@+id/addActivitiesDialogTypeEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="10sp"
+            android:hint="@string/type" />
+
+        <TextView
+            android:id="@+id/addActivitiesDialogDateTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="20sp"
+            android:gravity="center"
+            android:text="@string/defaultDate"
+            android:textSize="26sp" />
+
+        <TextView
+            android:id="@+id/addActivitiesDialogLocationTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="20sp"
+            android:gravity="center"
+            android:text="@string/defaultLocation"
+            android:textSize="26sp" />
+
+        <TextView
+            android:id="@+id/addActivitiesDialogCombineTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="20sp"
+            android:gravity="center"
+            android:text="@string/defaultCombine"
+            android:textSize="26sp" />
+
+        <LinearLayout
+            android:id="@+id/addActivitiesDialogSelectedCombine"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center">
+
+            <Button
+                android:id="@+id/addActivitiesDialogCancelButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="20sp"
+                android:text="@string/cancel" />
+
+            <Button
+                android:id="@+id/addActivitiesDialogSaveButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="20sp"
+                android:text="@string/save" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>
