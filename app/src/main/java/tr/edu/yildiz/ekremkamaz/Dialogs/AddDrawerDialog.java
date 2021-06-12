@@ -36,6 +36,19 @@ public class AddDrawerDialog extends Dialog implements View.OnClickListener {
     }
 
     @Override
+    public void onBackPressed() {
+        dismiss();
+    }
+
+    private boolean validateBox(){
+        if(editText.getText().toString().equals("")){
+            editText.setError("Çekmece ismi boş olamaz!");
+            return false;
+        }
+        return true;
+    }
+
+    @Override
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.addDrawerDialogCancelButton: {
@@ -43,8 +56,10 @@ public class AddDrawerDialog extends Dialog implements View.OnClickListener {
             }
             break;
             case R.id.addDrawerDialogSaveButton: {
-                a.addDrawer(new Drawer(-1, editText.getText().toString()));
-                dismiss();
+                if(validateBox()){
+                    a.addDrawer(new Drawer(-1, editText.getText().toString()));
+                    dismiss();
+                }
             }
             break;
             default:

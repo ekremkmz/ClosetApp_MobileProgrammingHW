@@ -13,6 +13,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
@@ -43,11 +44,13 @@ public class AddClothesDialog extends Dialog implements View.OnClickListener {
     private int position;
     private final int PICK_IMAGE = 123;
     private Uri uri;
+    private boolean selected=false;
 
     public void setContent(Uri uri) {
         this.uri = uri;
         ImageLoader imageLoader = new ImageLoader(imageView, uri);
         imageLoader.execute();
+        selected=true;
     }
 
     public AddClothesDialog(@NonNull Activity a) {
@@ -126,6 +129,11 @@ public class AddClothesDialog extends Dialog implements View.OnClickListener {
     }
 
     @Override
+    public void onBackPressed() {
+        dismiss();
+    }
+
+    @Override
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.addClothesDialogCancelButton: {
@@ -133,22 +141,24 @@ public class AddClothesDialog extends Dialog implements View.OnClickListener {
             }
             break;
             case R.id.addClothesDialogSaveButton: {
-                String name = nameEditText.getText().toString();
-                String type = typeEditText.getText().toString();
-                String color = colorEditText.getText().toString();
-                String pattern = patternEditText.getText().toString();
-                String priceText = priceEditText.getText().toString();
-                String symbol = NumberFormat.getCurrencyInstance().getCurrency().getSymbol();
-                String cleanString = priceText.replaceAll("[" + symbol + ",.]", "");
-                int price = Integer.parseInt(cleanString);
-                String date = dateTextView.getText().toString();
-                Clothes clothes = new Clothes(edit ? c.getId() : -1, name, type, color, pattern, date, price, edit ? c.getPhoto() : "", a.d.getId());
-                if (edit) {
-                    a.updateClothes(clothes, position, uri);
-                } else {
-                    a.addClothes(clothes, uri);
+                if (validateBox()) {
+                    String name = nameEditText.getText().toString();
+                    String type = typeEditText.getText().toString();
+                    String color = colorEditText.getText().toString();
+                    String pattern = patternEditText.getText().toString();
+                    String priceText = priceEditText.getText().toString();
+                    String symbol = NumberFormat.getCurrencyInstance().getCurrency().getSymbol();
+                    String cleanString = priceText.replaceAll("[" + symbol + ",.]", "");
+                    int price = Integer.parseInt(cleanString);
+                    String date = dateTextView.getText().toString();
+                    Clothes clothes = new Clothes(edit ? c.getId() : -1, name, type, color, pattern, date, price, edit ? c.getPhoto() : "", a.d.getId());
+                    if (edit) {
+                        a.updateClothes(clothes, position, uri);
+                    } else {
+                        a.addClothes(clothes, uri);
+                    }
+                    dismiss();
                 }
-                dismiss();
             }
             break;
             case R.id.addClothesDialogDateTextView: {
@@ -171,9 +181,37 @@ public class AddClothesDialog extends Dialog implements View.OnClickListener {
         }
     }
 
+    private boolean validateBox() {
+        if (nameEditText.getText().toString().equals("")) {
+            nameEditText.setError("İsim boş olamaz!");
+            return false;
+        }
+        if (typeEditText.getText().toString().equals("")) {
+            typeEditText.setError("Tür boş olamaz!");
+            return false;
+        }
+        if (colorEditText.getText().toString().equals("")) {
+            colorEditText.setError("Renk boş olamaz!");
+            return false;
+        }
+        if (patternEditText.getText().toString().equals("")) {
+            patternEditText.setError("Desen boş olamaz!");
+            return false;
+        }
+        if (priceEditText.getText().toString().equals("")) {
+            priceEditText.setError("Fiyat boş olamaz!");
+            return false;
+        }
+        if (imageTextView.getText().toString().equals("")) {
+            Toast.makeText(a, "Bir fotoğraf ekleyin!", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        return true;
+    }
+
     @Override
     public void dismiss() {
         super.dismiss();
-        ((BitmapDrawable) imageView.getDrawable()).getBitmap().recycle();
+        if(selected)((BitmapDrawable) imageView.getDrawable()).getBitmap().recycle();
     }
 }

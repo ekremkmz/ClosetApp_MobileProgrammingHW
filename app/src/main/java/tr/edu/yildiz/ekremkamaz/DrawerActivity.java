@@ -1,6 +1,7 @@
 package tr.edu.yildiz.ekremkamaz;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -15,6 +16,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
@@ -23,7 +25,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 
 import tr.edu.yildiz.ekremkamaz.Dialogs.AddClothesDialog;
-import tr.edu.yildiz.ekremkamaz.Dialogs.OptionsClothesDialog;
+import tr.edu.yildiz.ekremkamaz.Dialogs.OptionsDialog;
 import tr.edu.yildiz.ekremkamaz.data.Clothes;
 import tr.edu.yildiz.ekremkamaz.data.Drawer;
 import tr.edu.yildiz.ekremkamaz.helper.DatabaseHelper;
@@ -39,6 +41,7 @@ public class DrawerActivity extends AppCompatActivity implements View.OnClickLis
     static final int PICK_IMAGE = 123;
     public Drawer d;
     private boolean select = false;
+    private LinearLayoutManager layoutManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,7 +67,8 @@ public class DrawerActivity extends AppCompatActivity implements View.OnClickLis
         clothesList = DBHelper.getClothesFromDrawer(d.getId());
         customAdapter = new CustomAdapter(clothesList);
         clothesRecyclerView.setAdapter(customAdapter);
-        clothesRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        layoutManager = new LinearLayoutManager(this);
+        clothesRecyclerView.setLayoutManager(layoutManager);
     }
 
     @Override
@@ -79,20 +83,14 @@ public class DrawerActivity extends AppCompatActivity implements View.OnClickLis
         if (!DBHelper.addClothes(c, uri, d.getId())) return;
         clothesList.add(c);
         customAdapter.notifyItemInserted(clothesList.size() - 1);
+        Toast.makeText(this, "Kıyafet eklendi!", Toast.LENGTH_SHORT).show();
     }
 
     public void updateClothes(Clothes c, int position, Uri uri) {
         if (!DBHelper.updateClothes(c, uri)) return;
         clothesList.set(position, c);
         customAdapter.notifyItemChanged(position);
-    }
-
-    public Clothes getClothes(int position) {
-        return clothesList.get(position);
-    }
-
-    public void deleteClothes(int position) {
-        customAdapter.deleteClothes(position);
+        Toast.makeText(this, "Kıyafet güncellendi!", Toast.LENGTH_SHORT).show();
     }
 
     private class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.ViewHolder> {
@@ -105,6 +103,7 @@ public class DrawerActivity extends AppCompatActivity implements View.OnClickLis
         @NonNull
         @Override
         public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            System.out.println("onCreateViewHolder");
             Context context = parent.getContext();
             LayoutInflater inflater = LayoutInflater.from(context);
             View clothes = inflater.inflate(R.layout.item_drawer, parent, false);
@@ -113,32 +112,17 @@ public class DrawerActivity extends AppCompatActivity implements View.OnClickLis
 
         @Override
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+            System.out.println("onBindViewHolder");
             Clothes c = clothesList.get(position);
             holder.clothesTextView.setText(c.getName());
             ImageLoader imageLoader = new ImageLoader(holder.clothesImageView, Uri.parse(c.getPhoto()));
             imageLoader.execute();
         }
 
-        private void recycle(ImageView view){
-            if(view.getDrawable() instanceof BitmapDrawable){
-                ((BitmapDrawable) view.getDrawable()).getBitmap().recycle();
-            }
-        }
 
         @Override
         public int getItemCount() {
             return clothesList.size();
-        }
-
-        @Override
-        public void onViewRecycled(@NonNull @NotNull DrawerActivity.CustomAdapter.ViewHolder holder) {
-            recycle(holder.clothesImageView);
-        }
-
-        @Override
-        public void onViewDetachedFromWindow(@NonNull @NotNull ViewHolder holder) {
-            super.onViewDetachedFromWindow(holder);
-            recycle(holder.clothesImageView);
         }
 
         public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener, View.OnLongClickListener {
@@ -161,13 +145,35 @@ public class DrawerActivity extends AppCompatActivity implements View.OnClickLis
                     setResult(RESULT_OK, _intent);
                     finish();
                 } else {
-                    //TODO: kıyafeti göster
+                    Intent _intent = new Intent(DrawerActivity.this, ViewClothesActivity.class);
+                    _intent.putExtra("clothes", clothesList.get(getAdapterPosition()));
+                    startActivity(_intent);
                 }
             }
 
             @Override
             public boolean onLongClick(View view) {
-                OptionsClothesDialog options = new OptionsClothesDialog(DrawerActivity.this, getAdapterPosition());
+                int position = getAdapterPosition();
+                OptionsDialog options = new OptionsDialog(DrawerActivity.this) {
+                    @Override
+                    public void deleteAction() {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(DrawerActivity.this);
+                        builder.setTitle("Uyarı");
+                        builder.setMessage("Kıyafet silinecek. Emin misiniz?");
+                        builder.setNegativeButton("Hayır", null);
+                        builder.setPositiveButton("Evet", (dialogInterface, i) -> deleteClothes(position));
+                        builder.show();
+                        dismiss();
+                    }
+
+                    @Override
+                    public void updateAction() {
+                        addClothesDialog = new AddClothesDialog(DrawerActivity.this, clothesList.get(position), position);
+                        addClothesDialog.show();
+                        dismiss();
+                    }
+                };
+
                 options.show();
                 return true;
             }
@@ -184,6 +190,15 @@ public class DrawerActivity extends AppCompatActivity implements View.OnClickLis
     protected void onDestroy() {
         super.onDestroy();
         clothesRecyclerView.setAdapter(null);
+        for (int i = 0; i < layoutManager.getChildCount(); i++) {
+            recycle(layoutManager.getChildAt(i).findViewById(R.id.drawerImageView));
+        }
+    }
+
+    private void recycle(ImageView view) {
+        if (view.getDrawable() instanceof BitmapDrawable) {
+            ((BitmapDrawable) view.getDrawable()).getBitmap().recycle();
+        }
     }
 
     @Override

@@ -1,10 +1,11 @@
 package tr.edu.yildiz.ekremkamaz.data;
 
-import android.location.Location;
+import android.os.Parcel;
+import android.os.Parcelable;
 
 import com.google.android.gms.maps.model.LatLng;
 
-public class Activities {
+public class Activities implements Parcelable {
     private int id;
     private String name;
     private String type;
@@ -20,6 +21,42 @@ public class Activities {
         this.location = location;
         this.combine = combine;
     }
+
+    protected Activities(Parcel in) {
+        id = in.readInt();
+        name = in.readString();
+        type = in.readString();
+        date = in.readString();
+        location = in.readParcelable(LatLng.class.getClassLoader());
+        combine = in.readParcelable(Combine.class.getClassLoader());
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeInt(id);
+        dest.writeString(name);
+        dest.writeString(type);
+        dest.writeString(date);
+        dest.writeParcelable(location, flags);
+        dest.writeParcelable(combine, flags);
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    public static final Creator<Activities> CREATOR = new Creator<Activities>() {
+        @Override
+        public Activities createFromParcel(Parcel in) {
+            return new Activities(in);
+        }
+
+        @Override
+        public Activities[] newArray(int size) {
+            return new Activities[size];
+        }
+    };
 
     public int getId() {
         return id;
@@ -68,5 +105,4 @@ public class Activities {
     public void setCombine(Combine combine) {
         this.combine = combine;
     }
-
 }

@@ -13,5 +13,5 @@
     <color name="subTitleColor">#FFC0DFA1</color>
     <color name="primaryColor">#FFFF0A16</color>
     <color name="primaryColorVariant">#FFE0000B</color>
-
+    <color name="transparent">#00000000</color>
 </resources>

@@ -14,6 +14,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
@@ -71,6 +72,7 @@ public class ListDrawerActivity extends AppCompatActivity implements View.OnClic
         if (!DBHelper.addDrawer(d)) return;
         drawerList.add(d);
         customAdapter.notifyItemInserted(drawerList.size() - 1);
+        Toast.makeText(this, "Çekmece eklendi!", Toast.LENGTH_SHORT).show();
     }
 
     private class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.ViewHolder> {
@@ -130,7 +132,10 @@ public class ListDrawerActivity extends AppCompatActivity implements View.OnClic
                 builder.setTitle("Uyarı");
                 builder.setMessage("Çekmece silinecek. Emin misiniz?");
                 builder.setNegativeButton("Hayır", null);
-                builder.setPositiveButton("Evet", (dialogInterface, i) -> deleteDrawer(getAdapterPosition()));
+                builder.setPositiveButton("Evet", (dialogInterface, i) -> {
+                    deleteDrawer(getAdapterPosition());
+                    Toast.makeText(ListDrawerActivity.this, "Çekmece silindi!", Toast.LENGTH_SHORT).show();
+                });
                 builder.show();
                 return true;
             }

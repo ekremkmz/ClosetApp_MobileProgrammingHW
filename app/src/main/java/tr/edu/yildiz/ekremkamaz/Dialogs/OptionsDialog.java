@@ -11,16 +11,14 @@ import tr.edu.yildiz.ekremkamaz.Dialogs.AddClothesDialog;
 import tr.edu.yildiz.ekremkamaz.DrawerActivity;
 import tr.edu.yildiz.ekremkamaz.R;
 
-public class OptionsClothesDialog extends Dialog implements View.OnClickListener {
-    private int position;
-    private DrawerActivity a;
+public abstract class OptionsDialog extends Dialog implements View.OnClickListener {
+    private Activity a;
     private TextView delete;
     private TextView update;
 
-    public OptionsClothesDialog(Activity a, int position) {
+    public OptionsDialog(Activity a) {
         super(a);
-        this.a = (DrawerActivity) a;
-        this.position = position;
+        this.a = a;
         setContentView(R.layout.dialog_options_clothes);
         defineVariables();
         defineListeners();
@@ -37,26 +35,27 @@ public class OptionsClothesDialog extends Dialog implements View.OnClickListener
     }
 
     @Override
+    public void onBackPressed() {
+        dismiss();
+    }
+
+    @Override
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.optionsClothesDialogDelete: {
-                AlertDialog.Builder builder = new AlertDialog.Builder(a);
-                builder.setTitle("Uyarı");
-                builder.setMessage("Kıyafet silinecek. Emin misiniz?");
-                builder.setNegativeButton("Hayır", null);
-                builder.setPositiveButton("Evet", (dialogInterface, i) -> a.deleteClothes(position));
-                builder.show();
-                dismiss();
+                deleteAction();
             }
             break;
             case R.id.optionsClothesDialogUpdate: {
-                a.addClothesDialog = new AddClothesDialog(a, a.getClothes(position), position);
-                a.addClothesDialog.show();
-                dismiss();
+                updateAction();
             }
             break;
             default:
                 break;
         }
     }
+
+    public abstract void deleteAction();
+
+    public abstract void updateAction();
 }

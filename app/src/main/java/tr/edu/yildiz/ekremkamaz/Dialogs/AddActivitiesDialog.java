@@ -4,17 +4,14 @@ import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
-import android.location.Location;
 import android.net.Uri;
-import android.os.Parcelable;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.constraintlayout.widget.ConstraintLayout;
@@ -36,7 +33,10 @@ public class AddActivitiesDialog extends Dialog implements View.OnClickListener 
 
     private final int SELECT_COMBINE = 100;
     private final int SELECT_LOCATION = 200;
-    ActivitiesActivity a;
+    private int position;
+    private boolean edit = false;
+    private Activities act;
+    private ActivitiesActivity a;
     private DatePickerDialog.OnDateSetListener mDateSetListener;
     private EditText nameEditText;
     private EditText typeEditText;
@@ -48,7 +48,7 @@ public class AddActivitiesDialog extends Dialog implements View.OnClickListener 
     private Button saveButton;
     private Combine selectedCombine;
     private DatabaseHelper DBHelper;
-    private LatLng location;
+    private LatLng latlng;
 
     public AddActivitiesDialog(@NonNull Context context) {
         super(context);
@@ -56,6 +56,22 @@ public class AddActivitiesDialog extends Dialog implements View.OnClickListener 
         setContentView(R.layout.dialog_add_activites);
         defineVariables();
         defineListeners();
+    }
+
+    public AddActivitiesDialog(@NonNull Context context, Activities act, int position) {
+        super(context);
+        this.a = (ActivitiesActivity) context;
+        this.act = act;
+        edit = true;
+        this.position = position;
+        setContentView(R.layout.dialog_add_activites);
+        defineVariables();
+        defineListeners();
+        nameEditText.setText(act.getName());
+        typeEditText.setText(act.getType());
+        dateTextView.setText(act.getDate());
+        setLocation(act.getLocation());
+        setCombine(act.getCombine());
     }
 
     private void defineListeners() {
@@ -82,28 +98,40 @@ public class AddActivitiesDialog extends Dialog implements View.OnClickListener 
         DBHelper = DatabaseHelper.getInstance(a);
     }
 
+    @Override
+    public void onBackPressed() {
+        dismiss();
+    }
+
     public void setCombine(Combine c) {
         combineTextView.setText("Kombin seçildi !");
         combineTextView.setError(null);
         selectedCombine = c;
-        View view = LayoutInflater.from(getContext()).inflate(R.layout.item_closet, selectedCombineLayout, false);
-        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        layoutParams.setMargins(10, 10, 10, 10);
-        selectedCombineLayout.setLayoutParams(layoutParams);
-        selectedCombineLayout.addView(view, selectedCombineLayout.getWidth(), selectedCombineLayout.getWidth());
 
-        ImageLoader imageLoader1 = new ImageLoader(view.findViewById(R.id.topOfHeadImageView), Uri.parse(selectedCombine.getTopOfHead().getPhoto()));
-        ImageLoader imageLoader2 = new ImageLoader(view.findViewById(R.id.faceImageView), Uri.parse(selectedCombine.getTopOfHead().getPhoto()));
-        ImageLoader imageLoader3 = new ImageLoader(view.findViewById(R.id.topImageView), Uri.parse(selectedCombine.getTopOfHead().getPhoto()));
-        ImageLoader imageLoader4 = new ImageLoader(view.findViewById(R.id.lowerImageView), Uri.parse(selectedCombine.getTopOfHead().getPhoto()));
-        ImageLoader imageLoader5 = new ImageLoader(view.findViewById(R.id.footImageView), Uri.parse(selectedCombine.getTopOfHead().getPhoto()));
-        imageLoader1.execute();
-        imageLoader2.execute();
-        imageLoader3.execute();
-        imageLoader4.execute();
-        imageLoader5.execute();
+        //Eğer constructor da çağırıldıysa Layout boyutunun hesaplanmasını beklemek için
+        selectedCombineLayout.post(() -> {
+            View view = LayoutInflater.from(getContext()).inflate(R.layout.item_closet, selectedCombineLayout, false);
+            ConstraintLayout.LayoutParams layoutParams = new ConstraintLayout.LayoutParams(selectedCombineLayout.getWidth(), selectedCombineLayout.getWidth());
+            layoutParams.setMargins(10, 10, 10, 10);
+            view.setLayoutParams(layoutParams);
+            if (selectedCombineLayout.getChildCount() == 1) {
+                selectedCombineLayout.removeViewAt(0);
+            }
+            selectedCombineLayout.addView(view);
+
+            ImageLoader imageLoader1 = new ImageLoader(view.findViewById(R.id.topOfHeadImageView), Uri.parse(selectedCombine.getTopOfHead().getPhoto()));
+            ImageLoader imageLoader2 = new ImageLoader(view.findViewById(R.id.faceImageView), Uri.parse(selectedCombine.getFace().getPhoto()));
+            ImageLoader imageLoader3 = new ImageLoader(view.findViewById(R.id.topImageView), Uri.parse(selectedCombine.getTop().getPhoto()));
+            ImageLoader imageLoader4 = new ImageLoader(view.findViewById(R.id.lowerImageView), Uri.parse(selectedCombine.getLower().getPhoto()));
+            ImageLoader imageLoader5 = new ImageLoader(view.findViewById(R.id.footImageView), Uri.parse(selectedCombine.getFoot().getPhoto()));
+            imageLoader1.execute();
+            imageLoader2.execute();
+            imageLoader3.execute();
+            imageLoader4.execute();
+            imageLoader5.execute();
+        });
+
     }
-
 
     private boolean validateBoxes() {
         if (nameEditText.getText().toString().equals("")) {
@@ -147,17 +175,25 @@ public class AddActivitiesDialog extends Dialog implements View.OnClickListener 
                 dAC:
                 {
                     Intent _intent = new Intent(a, MapsActivity.class);
-                    if (location != null)
-                        _intent.putExtra("location", location);
+                    if (latlng != null)
+                        _intent.putExtra("latlng", latlng);
                     a.startActivityForResult(_intent, SELECT_LOCATION);
                 }
                 break;
             case R.id.addActivitiesDialogSaveButton: {
                 if (validateBoxes()) {
-                    Activities activities = new Activities(-1, nameEditText.getText().toString(), typeEditText.getText().toString(), dateTextView.getText().toString(), location, selectedCombine);
-                    if (!DBHelper.addActivities(activities))
-                        return;
-                    a.addActivites(a);
+                    if (edit) {
+                        Activities activities = new Activities(act.getId(), nameEditText.getText().toString(), typeEditText.getText().toString(), dateTextView.getText().toString(), latlng, selectedCombine);
+                        if (!DBHelper.updateActivities(activities))
+                            return;
+                        a.updateActivites(activities, position);
+                    } else {
+                        Activities activities = new Activities(-1, nameEditText.getText().toString(), typeEditText.getText().toString(), dateTextView.getText().toString(), latlng, selectedCombine);
+                        if (!DBHelper.addActivities(activities))
+                            return;
+                        a.addActivites(activities);
+                    }
+                    dismiss();
                 }
             }
             break;
@@ -170,9 +206,9 @@ public class AddActivitiesDialog extends Dialog implements View.OnClickListener 
         }
     }
 
-    public void setLocation(LatLng location) {
-        this.location = location;
-        locationTextView.setText("Latitude: " + location.latitude + ", Longitude: " + location.longitude);
+    public void setLocation(LatLng latlng) {
+        this.latlng = latlng;
+        locationTextView.setText("Latitude: " + latlng.latitude + ", Longitude: " + latlng.longitude);
         locationTextView.setTextSize(16);
         locationTextView.setError(null);
     }

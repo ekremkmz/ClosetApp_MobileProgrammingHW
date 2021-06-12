@@ -46,17 +46,23 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap = googleMap;
 
         LatLng location;
-        boolean hasLocation = getIntent().hasExtra("location");
+        boolean hasLocation = getIntent().hasExtra("latlng");
         if (hasLocation) {
-            location = getIntent().getParcelableExtra("location");
+            location = getIntent().getParcelableExtra("latlng");
         } else {
             location = new LatLng(41.0283717, 28.8893776);
         }
         mMap.moveCamera(CameraUpdateFactory.zoomTo(10));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(location));
-        mMap.setOnMapClickListener(this);
+
         if (hasLocation) {
             onMapClick(location);
+        }
+
+        if (getIntent().hasExtra("view")) {
+            selectLocationFAB.setVisibility(View.GONE);
+        } else {
+            mMap.setOnMapClickListener(this);
         }
     }
 
@@ -71,7 +77,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onClick(View view) {
         if (view.getId() == R.id.selectLocationFAB) {
             Intent _intent = new Intent();
-            _intent.putExtra("location", marker.getPosition());
+            _intent.putExtra("latlng", marker.getPosition());
             setResult(RESULT_OK, _intent);
             finish();
         }

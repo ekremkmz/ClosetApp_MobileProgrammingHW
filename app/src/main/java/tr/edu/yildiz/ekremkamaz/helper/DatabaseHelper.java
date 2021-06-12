@@ -7,6 +7,9 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.net.Uri;
 
+
+import com.google.android.gms.maps.model.LatLng;
+
 import org.apache.commons.io.IOUtils;
 
 import java.io.File;
@@ -16,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Set;
 
 import tr.edu.yildiz.ekremkamaz.data.Activities;
 import tr.edu.yildiz.ekremkamaz.data.Clothes;
@@ -71,9 +75,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 "    name varchar(20),\n" +
                 "    type varchar(20),\n" +
                 "    date varchar(20),\n" +
-                "    latitude INTEGER,\n" +
-                "    longitude INTEGER,\n" +
-                "    combine INTEGER\n" +
+                "    latitude varchar(16),\n" +
+                "    longitude varchar(16),\n" +
+                "    combine_id INTEGER\n" +
                 ");");
     }
 
@@ -103,6 +107,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public boolean deleteDrawer(Drawer d) {
         openDatabase();
+        ArrayList<Clothes> arrayList = getClothesFromDrawer(d.getId());
+
+        for (Clothes c : arrayList) {
+            deleteClothes(c);
+        }
+
         int result = DB.delete("drawers", "id=?", new String[]{String.valueOf(d.getId())});
         if (result > -1)
             return true;
@@ -199,6 +209,20 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public boolean deleteClothes(Clothes c) {
         openDatabase();
+        ArrayList<Combine> arrayList = getCombines();
+        for (Combine combine : arrayList) {
+            ArrayList<Integer> ids = new ArrayList<Integer>();
+            ids.add(combine.getTopOfHead().getId());
+            ids.add(combine.getFace().getId());
+            ids.add(combine.getTop().getId());
+            ids.add(combine.getLower().getId());
+            ids.add(combine.getFoot().getId());
+
+            if (ids.contains(new Integer(c.getId()))) {
+                deleteCombine(combine);
+            }
+        }
+
         int result = DB.delete("clothes", "id=?", new String[]{String.valueOf(c.getId())});
         File file = new File(c.getPhoto().split(":")[1]);
         file.delete();
@@ -260,6 +284,18 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return false;
     }
 
+    private Combine getCombine(int id) {
+        openDatabase();
+        String[] columns = {"id", "topOfHead", "face", "top", "lower", "foot"};
+
+        Cursor c = DB.query("combines", columns, "id=?", new String[]{String.valueOf(id)}, null, null, null);
+        Combine combine = null;
+        if (c.moveToNext()) {
+            combine = new Combine(c.getInt(0), getClothes(c.getInt(1)), getClothes(c.getInt(2)), getClothes(c.getInt(3)), getClothes(c.getInt(4)), getClothes(c.getInt(5)));
+        }
+        return combine;
+    }
+
     public ArrayList<Combine> getCombines() {
         openDatabase();
         String[] columns = {"id", "topOfHead", "face", "top", "lower", "foot"};
@@ -286,6 +322,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public boolean deleteCombine(Combine c) {
         openDatabase();
+        ArrayList<Activities> activitiesArrayList = getActivities();
+        for (Activities a : activitiesArrayList) {
+            if (a.getCombine().getId() == c.getId()) {
+                deleteActivities(a);
+            }
+        }
         int result = DB.delete("combines", "id=?", new String[]{String.valueOf(c.getId())});
         return result > -1;
     }
@@ -296,9 +338,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         cv.put("name", a.getName());
         cv.put("type", a.getType());
         cv.put("date", a.getDate());
-        cv.put("latitude", String.valueOf(a.getLocation().latitude * 10000000));
-        cv.put("longitude", String.valueOf(a.getLocation().longitude * 10000000));
-        cv.put("combine", a.getCombine().getId());
+        cv.put("latitude", String.valueOf(a.getLocation().latitude));
+        cv.put("longitude", String.valueOf(a.getLocation().longitude));
+        cv.put("combine_id", a.getCombine().getId());
         long result = DB.insert("activities", null, cv);
 
         if (result < 0) return false;
@@ -310,5 +352,38 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             return true;
         }
         return false;
+    }
+
+    public ArrayList<Activities> getActivities() {
+        openDatabase();
+        String[] columns = {"id", "name", "type", "date", "latitude", "longitude", "combine_id"};
+
+        Cursor c = DB.query("activities", columns, null, null, null, null, null);
+        ArrayList<Activities> activities = new ArrayList<Activities>();
+        while (c.moveToNext()) {
+            double latitude = Double.parseDouble(c.getString(4));
+            double longitude = Double.parseDouble(c.getString(5));
+            activities.add(new Activities(c.getInt(0), c.getString(1), c.getString(2), c.getString(3), new LatLng(latitude, longitude), getCombine(c.getInt(6))));
+        }
+        return activities;
+    }
+
+    public boolean deleteActivities(Activities a) {
+        openDatabase();
+        int result = DB.delete("activities", "id=?", new String[]{String.valueOf(a.getId())});
+        return result > -1;
+    }
+
+    public boolean updateActivities(Activities a) {
+        ContentValues cv = new ContentValues();
+        cv.put("name", a.getName());
+        cv.put("type", a.getType());
+        cv.put("date", a.getDate());
+        cv.put("latitude", String.valueOf(a.getLocation().latitude));
+        cv.put("longitude", String.valueOf(a.getLocation().longitude));
+        cv.put("combine_id", a.getCombine().getId());
+        long result = DB.update("activities", cv, "id=?", new String[]{String.valueOf(a.getId())});
+
+        return result > -1;
     }
 }

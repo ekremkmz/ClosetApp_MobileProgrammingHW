@@ -54,13 +54,16 @@ public class ClosetActivity extends AppCompatActivity implements View.OnClickLis
     private CustomAdapter customAdapter;
     private FloatingActionButton shareFAB;
     private boolean select = false;
+    private int selectedCombinePosition = -1;
     private boolean selectedExistCombine = false;
     private Combine selectedCombine;
+    private LinearLayoutManager layoutManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_closet);
+        setTitle("Kabin");
         defineVariables();
         if (getIntent().hasExtra("select")) {
             select = true;
@@ -95,8 +98,8 @@ public class ClosetActivity extends AppCompatActivity implements View.OnClickLis
                 combinesRecyclerView.setAdapter(customAdapter);
             }
         }.execute();
-
-        combinesRecyclerView.setLayoutManager(new LinearLayoutManager(ClosetActivity.this, LinearLayoutManager.HORIZONTAL, false));
+        layoutManager = new LinearLayoutManager(ClosetActivity.this, LinearLayoutManager.HORIZONTAL, false);
+        combinesRecyclerView.setLayoutManager(layoutManager);
         clothes = new Clothes[5];
         shareFAB = findViewById(R.id.shareFAB);
         shareFAB.setOnClickListener(this);
@@ -121,7 +124,7 @@ public class ClosetActivity extends AppCompatActivity implements View.OnClickLis
                         Combine c = new Combine(-1, clothes[0], clothes[1], clothes[2], clothes[3], clothes[4]);
                         if (DBHelper.addCombine(c)) {
                             Intent _intent = new Intent();
-                            _intent.putExtra("combine", selectedCombine);
+                            _intent.putExtra("combine", c);
                             setResult(RESULT_OK, _intent);
                             Toast.makeText(ClosetActivity.this, "Kombin kaydedildi!", Toast.LENGTH_SHORT).show();
                             finish();
@@ -203,6 +206,10 @@ public class ClosetActivity extends AppCompatActivity implements View.OnClickLis
             ImageLoader imageLoader = new ImageLoader(((ImageView) child.getChildAt(requestCode - 1)), Uri.parse(c.getPhoto()));
             imageLoader.execute();
             selectedExistCombine = false;
+            if (selectedCombinePosition != -1) {
+                layoutManager.findViewByPosition(selectedCombinePosition).setBackgroundColor(getColor(R.color.appBackgroundColor));
+                selectedCombinePosition = -1;
+            }
         }
     }
 
@@ -216,7 +223,20 @@ public class ClosetActivity extends AppCompatActivity implements View.OnClickLis
                 ((BitmapDrawable) d).getBitmap().recycle();
             }
         }
-        combinesRecyclerView.setAdapter(null);
+
+        for (int i = 0; i < layoutManager.getChildCount() - 1; i++) {
+            recycle(layoutManager.getChildAt(i).findViewById(R.id.topOfHeadImageView));
+            recycle(layoutManager.getChildAt(i).findViewById(R.id.faceImageView));
+            recycle(layoutManager.getChildAt(i).findViewById(R.id.topImageView));
+            recycle(layoutManager.getChildAt(i).findViewById(R.id.lowerImageView));
+            recycle(layoutManager.getChildAt(i).findViewById(R.id.footImageView));
+        }
+    }
+
+    private void recycle(ImageView view) {
+        if (view.getDrawable() instanceof BitmapDrawable) {
+            ((BitmapDrawable) view.getDrawable()).getBitmap().recycle();
+        }
     }
 
     private class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.ViewHolders> {
@@ -275,6 +295,11 @@ public class ClosetActivity extends AppCompatActivity implements View.OnClickLis
         @Override
         public void onBindViewHolder(@NonNull @NotNull ViewHolders holder, int position) {
             if (combines.size() != position) {
+                if (position == selectedCombinePosition) {
+                    holder.itemView.setBackgroundColor(getColor(R.color.cardBackgroundColor));
+                } else {
+                    holder.itemView.setBackgroundColor(getColor(R.color.transparent));
+                }
                 Combine c = combines.get(position);
                 ImageLoader imageLoader1 = new ImageLoader(((ViewHolderCabinet) holder).topOfHead, Uri.parse(c.getTopOfHead().getPhoto()));
                 ImageLoader imageLoader2 = new ImageLoader(((ViewHolderCabinet) holder).face, Uri.parse(c.getFace().getPhoto()));
@@ -286,34 +311,6 @@ public class ClosetActivity extends AppCompatActivity implements View.OnClickLis
                 imageLoader3.execute();
                 imageLoader4.execute();
                 imageLoader5.execute();
-            }
-        }
-
-        @Override
-        public void onViewRecycled(@NonNull @NotNull ViewHolders holder) {
-            if (holder instanceof ViewHolderCabinet) {
-                recycle(((ViewHolderCabinet) holder).topOfHead);
-                recycle(((ViewHolderCabinet) holder).face);
-                recycle(((ViewHolderCabinet) holder).top);
-                recycle(((ViewHolderCabinet) holder).lower);
-                recycle(((ViewHolderCabinet) holder).foot);
-            }
-        }
-
-        private void recycle(ImageView view) {
-            if (view.getDrawable() instanceof BitmapDrawable) {
-                ((BitmapDrawable) view.getDrawable()).getBitmap().recycle();
-            }
-        }
-
-        @Override
-        public void onViewDetachedFromWindow(@NonNull @NotNull ViewHolders holder) {
-            if (holder instanceof ViewHolderCabinet) {
-                recycle(((ViewHolderCabinet) holder).topOfHead);
-                recycle(((ViewHolderCabinet) holder).face);
-                recycle(((ViewHolderCabinet) holder).top);
-                recycle(((ViewHolderCabinet) holder).lower);
-                recycle(((ViewHolderCabinet) holder).foot);
             }
         }
 
@@ -357,8 +354,13 @@ public class ClosetActivity extends AppCompatActivity implements View.OnClickLis
                     ImageLoader imageLoader = new ImageLoader((ImageView) child.getChildAt(i), Uri.parse(clothes[i].getPhoto()));
                     imageLoader.execute();
                 }
-                selectedCombine = c;
                 selectedExistCombine = true;
+                int tmp = selectedCombinePosition;
+                selectedCombinePosition = getAdapterPosition();
+                selectedCombine = c;
+                if (tmp != -1)
+                    notifyItemChanged(tmp);
+                notifyItemChanged(selectedCombinePosition);
             }
 
             @Override
